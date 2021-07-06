@@ -38,7 +38,9 @@ public class Settings {
     private final String STREAM_PLAYER_SHOW_VIEWERCOUNT = "streamPlayerShowViewerCount",
             STREAM_PLAYER_SHOW_RUNTIME = "streamPlayerShowRuntime",
             STREAM_PLAYER_REVEAL_NAVIGATION = "streamPlayerRevealNavigation",
-            STREAM_PLAYER_AUTO_PLAYBACK = "streamPlayerAutoPlackbackOnReturn";
+            STREAM_PLAYER_AUTO_PLAYBACK = "streamPlayerAutoPlackbackOnReturn",
+            STREAM_PLAYER_USE_PROXY = "streamPlayerUseProxy",
+            STREAM_PLAYER_PROXY_URL = "streamPlayerProxyUrl";
     private final String APPEARANCE_STREAM_STYLE = "appStreamStyle";
     private final String APPEARANCE_GAME_STYLE = "appGameStyle";
     private final String APPEARANCE_FOLLOW_STYLE = "appFollowStyle";
@@ -712,6 +714,21 @@ public class Settings {
         return preferences.getBoolean(this.STREAM_PLAYER_AUTO_PLAYBACK, false);
     }
 
+    public boolean getStreamPlayerUseProxy() {
+        SharedPreferences preferences = getPreferences();
+        return preferences.getBoolean(this.STREAM_PLAYER_USE_PROXY, false);
+    }
+
+    public String getStreamPlayerUseProxyString() {
+        SharedPreferences preferences = getPreferences();
+        return String.valueOf(preferences.getBoolean(this.STREAM_PLAYER_USE_PROXY, false));
+    }
+
+    public String getStreamPlayerProxyUrl() {
+        SharedPreferences preferences = getPreferences();
+        return String.valueOf(preferences.getString(this.STREAM_PLAYER_PROXY_URL, "https://much.ga"));
+    }
+
     /**
      * Stream Player -
      */
@@ -719,6 +736,18 @@ public class Settings {
     public void setStreamPlayerAutoContinuePlaybackOnReturn(boolean autoPlayback) {
         SharedPreferences.Editor editor = getEditor();
         editor.putBoolean(this.STREAM_PLAYER_AUTO_PLAYBACK, autoPlayback);
+        editor.commit();
+    }
+
+    public void setStreamPlayerVideoProxy(boolean UseProxy) {
+        SharedPreferences.Editor editor = getEditor();
+        editor.putBoolean(this.STREAM_PLAYER_USE_PROXY, UseProxy);
+        editor.commit();
+    }
+
+    public void setStreamPlayerVideoProxyUrl(String url) {
+        SharedPreferences.Editor editor = getEditor();
+        editor.putString(this.STREAM_PLAYER_PROXY_URL, url);
         editor.commit();
     }
 

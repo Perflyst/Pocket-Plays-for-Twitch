@@ -50,8 +50,12 @@ public class GetVODStreamURL extends GetLiveStreamURL {
             e.printStackTrace();
         }
 
+
+        //default twitch api call here
         String vodURL = String.format("http://usher.twitch.tv/vod/%s?nauthsig=%s&nauth=%s", vodId, signature, safeEncode(token));
+
+
         Log.d(LOG_TAG, "HSL Playlist URL: " + vodURL);
-        return parseM3U8(vodURL);
+        return parseM3U8(vodURL, "");
     }
 }

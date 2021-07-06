@@ -30,6 +30,7 @@ public class GetLiveStreamURL extends AsyncTask<String, Void, LinkedHashMap<Stri
     public static final String QUALITY_AUTO = "auto";
     private final String LOG_TAG = getClass().getSimpleName();
     private final AsyncResponse callback;
+    public boolean ttvfun = false;
 
     public GetLiveStreamURL(AsyncResponse aCallback) {
         callback = aCallback;
@@ -57,8 +58,12 @@ public class GetLiveStreamURL extends AsyncTask<String, Void, LinkedHashMap<Stri
     @Override
     protected LinkedHashMap<String, Quality> doInBackground(String... params) {
         String streamerName = params[0];
+        String usettv = params[1];
+        String proxyurl = params[2];
         String signature = "";
         String token = "";
+
+        Log.d("Use TTV setting", usettv);
 
         Request request = new Request.Builder()
                 .url("https://gql.twitch.tv/gql")
@@ -81,17 +86,57 @@ public class GetLiveStreamURL extends AsyncTask<String, Void, LinkedHashMap<Stri
             e.printStackTrace();
         }
 
-        String streamUrl = String.format("http://usher.twitch.tv/api/channel/hls/%s.m3u8" +
-                "?player=twitchweb&" +
-                "&token=%s" +
-                "&sig=%s" +
-                "&allow_audio_only=true" +
-                "&allow_source=true" +
-                "&type=any" +
-                "&p=%s", streamerName, safeEncode(token), signature, "" + new Random().nextInt(6));
+
+
+        // check if the api is available
+        int responsecode = 0;
+
+        try {
+            // build ping request for the custom api
+            Request ping = new Request.Builder()
+                .url(proxyurl + "/on")
+                .build();
+
+            // get response code
+            Service.SimpleResponse pingresponse = Service.makeRequest(ping);
+            responsecode = pingresponse.code;
+            Log.d("Response Code", String.valueOf(responsecode));
+        } catch (Exception e) {
+            e.printStackTrace();
+            // when the API ping breaks then define the response code as 404
+            responsecode = 404;
+        }
+
+
+        String streamUrl = "";
+
+        //if ping successful use custom api otherwise use fallback twitch api
+        if (responsecode == 200 && usettv == "true") {
+            ttvfun = true;
+            Log.d("Using " + proxyurl + " api", String.valueOf(responsecode));
+        } else {
+            ttvfun = false;
+            Log.d("Using default api", String.valueOf(responsecode));
+        }
+
+        if (ttvfun == true) {
+            //modified api call here for the custom api
+            //enforce https, because a 301 redirect is not supported
+            streamUrl = String.format(proxyurl + "/channel/%s", streamerName);
+        } else {
+            //default twitch api call here
+            streamUrl = String.format("http://usher.twitch.tv/api/channel/hls/%s.m3u8" +
+                    "?player=twitchweb&" +
+                    "&token=%s" +
+                    "&sig=%s" +
+                    "&allow_audio_only=true" +
+                    "&allow_source=true" +
+                    "&type=any" +
+                    "&p=%s", streamerName, safeEncode(token), signature, "" + new Random().nextInt(6));
+        }
 
         Log.d(LOG_TAG, "HSL Playlist URL: " + streamUrl);
-        return parseM3U8(streamUrl);
+        return parseM3U8(streamUrl, proxyurl);
     }
 
     @Override
@@ -99,19 +144,25 @@ public class GetLiveStreamURL extends AsyncTask<String, Void, LinkedHashMap<Stri
         callback.finished(result);
     }
 
-    LinkedHashMap<String, Quality> parseM3U8(String urlToRead) {
-        Request request = new Request.Builder()
+    LinkedHashMap<String, Quality> parseM3U8(String urlToRead, String proxyurl) {
+        Request request;
+        Log.d("M3U8 Url", urlToRead);
+        request = new Request.Builder()
                 .url(urlToRead)
                 .header("Referer", "https://player.twitch.tv")
                 .header("Origin", "https://player.twitch.tv")
                 .build();
 
+
         String result = "";
         Service.SimpleResponse response = Service.makeRequest(request);
         if (response != null)
+            Log.d("M3U8 Response Code", String.valueOf(response.response.code()));
             result = response.body;
+        Log.d("result", result);
 
         LinkedHashMap<String, Quality> resultList = new LinkedHashMap<>();
+
         resultList.put(QUALITY_AUTO, new Quality("Auto", urlToRead));
 
         Pattern p = Pattern.compile("GROUP-ID=\"(.+)\",NAME=\"(.+)\".+\\n.+\\n(https?://\\S+)");
